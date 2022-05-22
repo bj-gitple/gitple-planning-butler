@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Template</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"
+    />
+  </head>
+  <style>
+    html,
+    body,
+    div.container {
+      height: 100%;
+    }
+  </style>
+  <body>
+    {{#each cards}}
+    <div class="container">
+      <table class="table">
+        <tbody>
+          <tr>
+            <td class="p-0" style="width: 100%">
+              <h1>{{this.title}}</h1>
+            </td>
+            <td class="p-0">
+              <figure class="image is-32x32">
+                <img
+                  src="https://avatars.githubusercontent.com/u/48270426?s=200&v=4"
+                  alt="gitple logo"
+                />
+              </figure>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div>
+        <span class="tag is-info">{{this.team}}</span>
+        <span class="tag is-dark">#{{this.number}}</span>
+      </div>
+      <article class="message is-small my-3">
+        <pre
+          class="message-body"
+          style="font-size: 13px; white-space: pre-wrap"
+        >
+{{this.body}}</pre
+        >
+      </article>
+    </div>
+    {{/each}}
+  </body>
+</html>
