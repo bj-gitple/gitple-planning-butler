@@ -12,7 +12,9 @@ export interface ICoreCard {
   title: string;
   body: string;
   hours: number;
+  isOptional: boolean;
   team: string;
+  labels: Array<string>
 }
 
 export interface ISetup {

@@ -16,7 +16,7 @@ export class Project {
   private readonly cards: ICoreCard[] = [];
   private readonly readline: IReadline;
   private setup: ISetup = {
-    teamLabels: ["RN", "FE", "BE"],
+    teamLabels: ["RN", "FE", "BE", "DT"],
     orgName: "",
     repoName: "",
     repoOwner: "",
@@ -33,6 +33,17 @@ export class Project {
       input: process.stdin,
       output: process.stdout,
     });
+  }
+
+  private getTeamDuration(cards: ICoreCard[]) {
+    
+    const requiredCards = _.filter(cards, (card) => !card.isOptional);
+    const optionalCards = _.filter(cards, (card) => card.isOptional)
+
+    return {
+      requiredHours: this.getTeamHours(requiredCards),
+      optionalHours: this.getTeamHours(optionalCards)
+    }
   }
 
   private getTeamHours(cards: ICoreCard[]): { team: string; total: number }[] {
@@ -52,6 +63,23 @@ export class Project {
     return result;
   }
 
+  private getDuration(labels: Array<ILabel>) {
+    const duration = {
+      hours: 0,
+      optional: 0
+    }
+
+    const isOptional = _.map(labels, (l) => l.name).includes('optional');
+    const [_label] = _.filter(labels, (label) => label.description === "duration");
+    if(isOptional) {
+      duration.optional = _.toNumber(_label.name.replace("d", ""));
+    } else {
+      duration.hours = _.toNumber(_label.name.replace("d", ""));
+    }
+
+    return duration
+  }
+
   private getHoursFromLabel(labels: Array<ILabel>) {
     let duration = 0;
     const [foundDurationLabel] = _.filter(
@@ -63,6 +91,12 @@ export class Project {
     } else {
       return (duration = _.toNumber(foundDurationLabel.name.replace("d", "")));
     }
+  }
+
+  private getOtherLabels(labels: Array<ILabel>) {
+    // console.log('labels >>> ', labels)
+    const otherLabels = _.filter(labels, (label) => label.description !== 'duration' && !this.config.teamLabels.includes(label.name))
+    return _.map(otherLabels, (label) => label.name);
   }
 
   private getTeamFromLabel(labels: Array<ILabel>) {
@@ -117,7 +151,7 @@ export class Project {
       org: this.setup.orgName,
     });
     console.log("@@@@ ORG REPOS @@@@");
-    console.log(orgRepos.data);
+    console.log(_.map(orgRepos.data, (repo) => ({ name: repo.full_name, id: repo.id, url: repo.url })));
     console.log("@@@@ ~~~ @@@@ ~~~ @@@@\n");
 
     const repoId = await this.readlineAsync(
@@ -199,7 +233,7 @@ export class Project {
     this.readline.close();
   }
 
-  private handleIssueBodyStr(body: string, maxLen: number = 250) {
+  private handleIssueBodyStr(body: string, maxLen: number = 300) {
     try {
       return body.length > maxLen ? body.substring(0, maxLen) : body;
     } catch (error) {
@@ -220,7 +254,7 @@ export class Project {
     const projectColumns = await this.octokit.request(
       "GET /projects/{project_id}/columns",
       {
-        project_id: this.config.project_id,
+        project_id: this.config.project_id
       }
     );
 
@@ -236,6 +270,7 @@ export class Project {
         "GET /projects/columns/{column_id}/cards",
         {
           column_id: foundCol.id,
+          per_page: 200
         }
       );
       //   console.log("@@@ currentSprintCards @@@ ");
@@ -264,26 +299,47 @@ export class Project {
       //   console.log(`@@@ issue detail @@@ ${num}`);
       //   console.dir(issue, { depth: null });
 
-      this.cards.push({
-        id: issue.id,
-        number: issue.number,
-        title: issue.title,
-        body: this.handleIssueBodyStr(issue.body as string),
-        hours: this.getHoursFromLabel(labels),
-        team: this.getTeamFromLabel(labels),
-      });
-    }
+      if(labels.length) {
+        const labelNames = [
+          ...this.getOtherLabels(labels)
+        ];
+        this.cards.push({
+          id: issue.id,
+          number: issue.number,
+          title: issue.title,
+          body: this.handleIssueBodyStr(issue.body as string),
+          isOptional: _.map(labels, (l) => l.name).includes('optional'),
+          hours: this.getHoursFromLabel(labels),
+          team: this.getTeamFromLabel(labels),
+          labels: labelNames,
+        });
 
-    const teamHours = this.getTeamHours(this.cards);
-    const content = _.map(teamHours, (h) => h.team + ": " + h.total + "\n")
-      .toString()
-      .split(",")
-      .join("");
+      }
+
+    }
+    // console.dir(this.cards, { depth: null });
+
+    const { requiredHours, optionalHours } = this.getTeamDuration(this.cards);
+
+    const requiredContent = _.map(requiredHours, (h) => h.team + ": " + h.total + "\n")
+    .toString()
+    .split(",")
+    .join("");
+
+    const optionalContent = _.map(optionalHours, (h) => h.team + ": " + h.total + "\n")
+    .toString()
+    .split(",")
+    .join("");
+    // console.log('optionalContent @@@')
+    // console.dir(optionalContent, { depth: null });
+    // console.log('requiredContent @@@')
+    // console.dir(requiredContent, { depth: null });
+    const content = 'Required:\n' + requiredContent + '\nOptional:\n' + optionalContent;
     this.writeFile(__dirname + "/files/hours.txt", content);
     await this.createSprintPdf();
     this.notify(
       "Success",
-      "Find calculated hours in files/hours.txt and printout ready cards in files/output.pdf"
+      "calculated hours:\nfiles/hours.txt\npdf cards:\nfiles/output.pdf"
     );
     this.readline.close();
   }

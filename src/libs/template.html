@@ -37,10 +37,28 @@
         </tbody>
       </table>
 
-      <div>
-        <span class="tag is-info">{{this.team}}</span>
-        <span class="tag is-dark">#{{this.number}}</span>
-      </div>
+    
+        <table class="table">
+          <tbody>
+            <tr>
+              <td class="p-0" style="width: 100%">
+                <div>
+                  <span class="tag is-large is-info mr-1">{{this.team}}</span>
+              
+                  {{#each labels}}
+                  <span class="tag is-large is-info mr-1">{{this}}</span>
+                  {{/each}}
+                  <span class="tag is-large is-info mr-1">{{this.hours}}d</span>
+                </div>
+              </td>
+              <td class="p-0">
+                <span class="tag is-large is-dark mr-1">#{{this.number}}</span>
+              </td>
+            </tr>
+          </tbody>
+          </table>
+
+
       <article class="message is-small my-3">
         <pre
           class="message-body"
