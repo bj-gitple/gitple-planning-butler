@@ -39,3 +39,4 @@ RN: 3
 ### Troubleshooting
 
 - if you can't see some repositories during setup, double-check access token permissions in your github account: Settings > Developer Settings > Personal access tokens > YOUR TOKEN NAME
+- if m1 air and showing "Error: spawn Unknown system error -86 at NotificationCenter.notifyRaw", then ```softwareupdate --install-rosetta```.
